@@ -43,16 +43,32 @@ def asset_show(request, pk):
             )
         except Asset.DoesNotExist:
             return JsonResponse(
-                {"message": "Invalid Employee id"},
+                {"message": "Invalid Asset id"},
                 status=404
             )
     elif request.method == "DELETE":
+        try:
+            Asset.objects.get(id=pk)
+        except Asset.DoesNotExist:
+            return JsonResponse(
+                {"message": "Invalid Asset id"},
+                status=404
+            )
         count, _ = Asset.objects.get(id=pk).delete()
         return JsonResponse({"deleted": count > 0})
     else:
         content = json.loads(request.body)
-        Asset.objects.get(id=pk).update(**content)
-        asset = Asset.objects.get(id=pk)
+        try:
+            asset = Asset.objects.get(id=pk)
+        except Asset.DoesNotExist:
+            return JsonResponse(
+                {"message": "Invalid Asset id"},
+                status=404
+            )
+        for key, value in content.items():
+            setattr(asset, key, value)
+        asset.save()
+
         return JsonResponse(
             asset,
             encoder=AssetEncoder,

@@ -47,12 +47,28 @@ def employee_show(request, pk):
                 status=404
             )
     elif request.method == "DELETE":
+        try:
+            Employee.objects.get(id=pk)
+        except Employee.DoesNotExist:
+            return JsonResponse(
+                {"message": "Invalid Employee id"},
+                status=404
+            )
         count, _ = Employee.objects.get(id=pk).delete()
         return JsonResponse({"deleted": count > 0})
     else:
         content = json.loads(request.body)
-        Employee.objects.get(id=pk).update(**content)
-        employee = Employee.objects.get(id=pk)
+        try:
+            employee = Employee.objects.get(id=pk)
+        except Employee.DoesNotExist:
+            return JsonResponse(
+                {"message": "Invalid Employee id"},
+                status=404
+            )
+        for key, value in content.items():
+            setattr(employee, key, value)
+        employee.save()
+        
         return JsonResponse(
             employee,
             encoder=EmployeeEncoder,
