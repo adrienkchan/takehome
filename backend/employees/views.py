@@ -1,7 +1,6 @@
 from .encoders import EmployeeEncoder
-from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.db.utils import IntegrityError
 from .models import Employee
 import json
@@ -9,7 +8,7 @@ import json
 # Create your views here.
 
 @require_http_methods(["GET", "POST"])
-def employee_list(request):
+def employee_list(request: HttpRequest):
     if request.method == "GET":
         employee = Employee.objects.all()
         return JsonResponse(
@@ -32,7 +31,7 @@ def employee_list(request):
         )
 
 @require_http_methods(["GET", "DELETE", "PUT"])
-def employee_show(request, pk):
+def employee_show(request: HttpRequest, pk: int):
     if request.method == "GET":
         try:
             employee = Employee.objects.get(id=pk)
@@ -48,14 +47,13 @@ def employee_show(request, pk):
             )
     elif request.method == "DELETE":
         try:
-            Employee.objects.get(id=pk)
+            count, _ = Employee.objects.get(id=pk).delete()
+            return JsonResponse({"deleted": count > 0})
         except Employee.DoesNotExist:
             return JsonResponse(
                 {"message": "Invalid Employee id"},
                 status=404
             )
-        count, _ = Employee.objects.get(id=pk).delete()
-        return JsonResponse({"deleted": count > 0})
     else:
         content = json.loads(request.body)
         try:
@@ -68,7 +66,7 @@ def employee_show(request, pk):
         for key, value in content.items():
             setattr(employee, key, value)
         employee.save()
-        
+
         return JsonResponse(
             employee,
             encoder=EmployeeEncoder,

@@ -1,7 +1,6 @@
 from .encoders import AssetEncoder
-from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.db.utils import IntegrityError
 from .models import Asset
 import json
@@ -9,7 +8,7 @@ import json
 # Create your views here.
 
 @require_http_methods(["GET", "POST"])
-def asset_list(request):
+def asset_list(request: HttpRequest):
     if request.method == "GET":
         asset = Asset.objects.all()
         return JsonResponse(
@@ -32,7 +31,7 @@ def asset_list(request):
         )
 
 @require_http_methods(["GET", "DELETE", "PUT"])
-def asset_show(request, pk):
+def asset_show(request: HttpRequest, pk: int):
     if request.method == "GET":
         try:
             asset = Asset.objects.get(id=pk)
@@ -48,14 +47,13 @@ def asset_show(request, pk):
             )
     elif request.method == "DELETE":
         try:
-            Asset.objects.get(id=pk)
+            count, _ = Asset.objects.get(id=pk).delete()
+            return JsonResponse({"deleted": count > 0})
         except Asset.DoesNotExist:
             return JsonResponse(
                 {"message": "Invalid Asset id"},
                 status=404
             )
-        count, _ = Asset.objects.get(id=pk).delete()
-        return JsonResponse({"deleted": count > 0})
     else:
         content = json.loads(request.body)
         try:
